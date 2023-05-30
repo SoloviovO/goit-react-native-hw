@@ -45,6 +45,7 @@ const RegistrationScreen = ({ navigation }) => {
 
   const onSubmitPress = () => {
     console.log(login, email, password);
+    navigation.navigate("Home");
     setLogin("");
     setEmail("");
     setPassword("");

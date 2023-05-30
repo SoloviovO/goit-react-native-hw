@@ -40,6 +40,7 @@ const LoginScreen = ({ navigation }) => {
 
   const onSubmitPress = () => {
     console.log(email, password);
+    navigation.navigate("Home");
     setEmail("");
     setPassword("");
   };
