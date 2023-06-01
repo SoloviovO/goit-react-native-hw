@@ -1,27 +1,56 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, TextInput } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TextInput,
+  KeyboardAvoidingView,
+} from "react-native";
 import { Camera } from "expo-camera";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import * as Location from "expo-location";
+import * as MediaLibrary from "expo-media-library";
 import { FontAwesome } from "@expo/vector-icons";
 import { Feather } from "@expo/vector-icons";
 
 const CreatePostsScreen = ({ navigation }) => {
   const [camera, setCamera] = useState(null);
+  const [hasPermission, setHasPermission] = useState(null);
   const [photo, setPhoto] = useState("");
   const [location, setLocation] = useState(null);
   const [titlePhoto, setTitlePhoto] = useState("");
   const [place, setPlace] = useState("");
 
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      await MediaLibrary.requestPermissionsAsync();
+
+      setHasPermission(status === "granted");
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.log("Permission to access location was denied");
+      }
+
+      let locationData = await Location.getCurrentPositionAsync({});
+      const coords = {
+        latitude: locationData.coords.latitude,
+        longitude: locationData.coords.longitude,
+      };
+      setLocation(coords);
+    })();
+  }, []);
+
   const takePhoto = async () => {
     const photo = await camera.takePictureAsync();
+    await MediaLibrary.createAssetAsync(photo.uri);
     setPhoto(photo.uri);
-    const locationData = await Location.getCurrentPositionAsync({});
-    const locationCords = {
-      latitude: locationData.coords.latitude,
-      longitude: locationData.coords.longitude,
-    };
-    setLocation(locationCords);
   };
 
   const sendPhoto = async () => {
@@ -39,22 +68,30 @@ const CreatePostsScreen = ({ navigation }) => {
     setPlace("");
   };
 
+  if (hasPermission === null) {
+    return <View />;
+  }
+  if (hasPermission === false) {
+    return <Text>Доступ до камери не наданий!</Text>;
+  }
+
   return (
     <View style={styles.container}>
-      {photo ? (
-        <View style={styles.takePhotoContainer}>
-          <Image
-            style={{ width: "100%", height: 240, borderRadius: 8 }}
-            source={{ uri: photo }}
-          />
-        </View>
-      ) : (
+      <View style={styles.cameraContainer}>
         <Camera style={styles.camera} ref={setCamera}>
+          {photo && (
+            <View style={styles.takePhotoContainer}>
+              <Image
+                style={{ width: "100%", height: 240, borderRadius: 8 }}
+                source={{ uri: photo }}
+              />
+            </View>
+          )}
           <TouchableOpacity onPress={takePhoto} style={styles.cameraBtn}>
             <FontAwesome name="camera" size={24} color="#BDBDBD" />
           </TouchableOpacity>
         </Camera>
-      )}
+      </View>
       <Text style={styles.photoText}>
         {photo ? "Редагувати фото" : "Завантажте фото"}
       </Text>
@@ -113,18 +150,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: "space-between",
   },
-  camera: {
+  cameraContainer: {
+    position: "relative",
+    marginTop: 32,
     marginBottom: 8,
     height: 240,
-    marginTop: 32,
-    justifyContent: "center",
-    alignItems: "center",
+    overflow: "hidden",
     backgroundColor: "#F6F6F6",
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: "#E8E8E8",
     borderRadius: 8,
-    overflow: "hidden",
+  },
+  camera: {
+    height: 240,
+    justifyContent: "center",
+    alignItems: "center",
   },
   cameraBtn: {
     width: 60,
@@ -134,7 +175,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   photoText: {
     marginBottom: 32,
     fontFamily: "Roboto-Regular",
@@ -154,11 +194,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   takePhotoContainer: {
-    marginTop: 32,
-    height: 240,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    borderColor: "#FFFFFF",
+    borderWidth: 1,
   },
   sendBtn: {
     marginBottom: 100,
