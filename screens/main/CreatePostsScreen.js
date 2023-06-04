@@ -37,17 +37,16 @@ const CreatePostsScreen = ({ navigation }) => {
       if (status !== "granted") {
         console.log("Permission to access location was denied");
       }
-
-      let locationData = await Location.getCurrentPositionAsync({});
-      const coords = {
-        latitude: locationData.coords.latitude,
-        longitude: locationData.coords.longitude,
-      };
-      setLocation(coords);
     })();
   }, []);
 
   const takePhoto = async () => {
+    let locationData = await Location.getCurrentPositionAsync({});
+    const coords = {
+      latitude: locationData.coords.latitude,
+      longitude: locationData.coords.longitude,
+    };
+    setLocation(coords);
     const photo = await camera.takePictureAsync();
     await MediaLibrary.createAssetAsync(photo.uri);
     setPhoto(photo.uri);
